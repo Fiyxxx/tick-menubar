@@ -32,6 +32,7 @@ final class SelfTest: NSObject, NSApplicationDelegate {
         ]
         try! JSONEncoder().encode(seed).write(to: file)
 
+        UserDefaults.standard.removeObject(forKey: "topLeft")
         let store = Store(url: file)
         let c = PanelController(store: store)
         c.panel.setFrameTopLeftPoint(NSPoint(x: 900, y: 800))
@@ -109,6 +110,20 @@ final class SelfTest: NSObject, NSApplicationDelegate {
         c.hotkeyToggle()
         c.hotkeyToggle()
         expect(!c.panel.isVisible, "hotkey toggles closed again")
+
+        c.show()
+        c.panel.setFrameTopLeftPoint(NSPoint(x: 300, y: 600))
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        for ch in "Moved" { key(String(ch), 0) }
+        key("\r", 36)
+        expect(c.panel.frame.minX == 300 && c.panel.frame.maxY == 600, "dragged panel stays put while it grows")
+        c.hide()
+        c.show()
+        expect(c.panel.frame.minX == 300 && c.panel.frame.maxY == 600, "dragged position is remembered on reopen")
+        c.resetPosition()
+        expect(c.savedTopLeft == nil, "reset forgets the dragged position")
+        c.hide()
+        UserDefaults.standard.removeObject(forKey: "topLeft")
 
         print(failures == 0 ? "all passed" : "\(failures) failed")
         exit(failures == 0 ? 0 : 1)

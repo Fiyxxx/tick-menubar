@@ -73,11 +73,14 @@ final class PanelController: NSObject {
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.animationBehavior = .utilityWindow
+        panel.isMovableByWindowBackground = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         panel.appearance = NSAppearance(named: .darkAqua)
         panel.level = floating ? .floating : .normal
         panel.contentView = root
         panel.onEscape = { [weak self] in self?.hide() }
+        NotificationCenter.default.addObserver(self, selector: #selector(moved),
+                                               name: NSWindow.didMoveNotification, object: panel)
         panel.onCommand = { [weak self] key, shift in self?.command(key, shift: shift) ?? false }
         list.onChange = { [weak self] in self?.refresh() }
         build()
@@ -211,7 +214,9 @@ final class PanelController: NSObject {
         let height = 7 + listHeight.constant + 7 + bottom.fittingSize.height
         var frame = panel.frame
         frame.size = NSSize(width: Theme.width, height: height)
-        if let bar = anchor() {
+        if let spot = savedTopLeft, NSScreen.screens.contains(where: { $0.visibleFrame.contains(spot) }) {
+            frame.origin = NSPoint(x: spot.x, y: spot.y - height)
+        } else if let bar = anchor() {
             let screen = NSScreen.screens.first { $0.frame.contains(NSPoint(x: bar.midX, y: bar.midY)) } ?? NSScreen.main
             let visible = screen?.visibleFrame ?? .zero
             frame.origin.x = min(max(bar.midX - Theme.width / 2, visible.minX + 8), visible.maxX - Theme.width - 8)
@@ -219,9 +224,29 @@ final class PanelController: NSObject {
         } else {
             frame.origin.y = panel.frame.maxY - height
         }
+        placing = true
         panel.setFrame(frame, display: true)
+        placing = false
         root.layoutSubtreeIfNeeded()
         panel.invalidateShadow()
+    }
+
+    // once dragged, the panel stays where you left it, even after a relaunch
+    private var placing = false
+
+    var savedTopLeft: NSPoint? {
+        UserDefaults.standard.string(forKey: "topLeft").map(NSPointFromString)
+    }
+
+    @objc private func moved() {
+        guard !placing else { return }
+        let f = panel.frame
+        UserDefaults.standard.set(NSStringFromPoint(NSPoint(x: f.minX, y: f.maxY)), forKey: "topLeft")
+    }
+
+    func resetPosition() {
+        UserDefaults.standard.removeObject(forKey: "topLeft")
+        relayout()
     }
 
     func show() {

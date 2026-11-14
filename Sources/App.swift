@@ -38,12 +38,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard NSApp.currentEvent?.type == .rightMouseUp else { return panel.clickToggle() }
         let menu = NSMenu()
         menu.addItem(withTitle: "Settings", action: #selector(openSettings), keyEquivalent: "").target = self
+        if panel.savedTopLeft != nil {
+            menu.addItem(withTitle: "Move Back Under Icon", action: #selector(resetPosition), keyEquivalent: "").target = self
+        }
         menu.addItem(.separator())
         menu.addItem(withTitle: "Quit Tick", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         item.menu = menu
         item.button?.performClick(nil)
         item.menu = nil
     }
+
+    @objc private func resetPosition() { panel.resetPosition() }
 
     @objc private func openSettings() {
         if !panel.panel.isVisible { panel.show() }
