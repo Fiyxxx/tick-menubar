@@ -7,7 +7,7 @@
     <key>CFBundleDisplayName</key>
     <string>Tick</string>
     <key>CFBundleIdentifier</key>
-    <string>local.tick.app</string>
+    <string>io.github.fiyxxx.tick</string>
     <key>CFBundleExecutable</key>
     <string>Tick</string>
     <key>CFBundlePackageType</key>
