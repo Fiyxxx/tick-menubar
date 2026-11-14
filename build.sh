@@ -1,11 +1,12 @@
 #!/bin/zsh
-# usage: ./build.sh            build build/Tick.app
+# usage: ./build.sh            build build/Tick.app (apple silicon + intel)
 #        ./build.sh install    build, copy to /Applications and relaunch
+#        ./build.sh zip        build and pack build/Tick.zip for a release
 #        ./build.sh test       run the self-test against a debug build
 set -e
 cd "$(dirname "$0")"
 
-flags=(-swift-version 5 -target arm64-apple-macos14.0 -framework AppKit -framework Carbon -framework ServiceManagement)
+flags=(-swift-version 5 -framework AppKit -framework Carbon -framework ServiceManagement)
 
 if [[ "$1" == "test" ]]; then
     out=build/test
@@ -18,7 +19,10 @@ fi
 app=build/Tick.app
 rm -rf $app
 mkdir -p $app/Contents/MacOS $app/Contents/Resources
-swiftc -O $flags Sources/*.swift -o $app/Contents/MacOS/Tick
+for arch in arm64 x86_64; do
+    swiftc -O $flags -target $arch-apple-macos14.0 Sources/*.swift -o build/Tick-$arch
+done
+lipo -create build/Tick-arm64 build/Tick-x86_64 -output $app/Contents/MacOS/Tick
 cp Resources/Info.plist $app/Contents/
 
 if [[ ! -f build/AppIcon.icns ]]; then
@@ -34,6 +38,12 @@ if [[ ! -f build/AppIcon.icns ]]; then
 fi
 cp build/AppIcon.icns $app/Contents/Resources/
 codesign --force --sign - $app
+
+if [[ "$1" == "zip" ]]; then
+    rm -f build/Tick.zip
+    ditto -c -k --keepParent $app build/Tick.zip
+    echo "packed build/Tick.zip"
+fi
 
 if [[ "$1" == "install" ]]; then
     pkill -x Tick || true
