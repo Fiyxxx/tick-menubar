@@ -16,8 +16,13 @@ final class SelfTest: NSObject, NSApplicationDelegate {
     func snapshot(_ view: NSView, _ name: String) {
         RunLoop.main.run(until: Date().addingTimeInterval(0.1))
         view.layoutSubtreeIfNeeded()
-        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-        view.cacheDisplay(in: view.bounds, to: rep)
+        let size = view.bounds.size
+        let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * 2), pixelsHigh: Int(size.height * 2),
+                                   bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                   colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+        let context = NSGraphicsContext(bitmapImageRep: rep)!
+        context.cgContext.scaleBy(x: 2, y: 2)
+        view.displayIgnoringOpacity(view.bounds, in: context)
         try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: "\(out)/\(name).png"))
     }
 
