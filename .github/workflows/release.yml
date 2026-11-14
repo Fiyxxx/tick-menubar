@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: ./build.sh test
       - run: ./build.sh zip
       - run: gh release create "$GITHUB_REF_NAME" build/Tick.zip --title "Tick $GITHUB_REF_NAME" --generate-notes
